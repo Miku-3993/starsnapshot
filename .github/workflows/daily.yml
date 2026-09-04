@@ -1,0 +1,31 @@
+name: Daily Stars Report
+
+on:
+  schedule:
+    - cron: "0 8 * * *"   # every day 08:00 UTC
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [stars.md]
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python starsnapshot.py Miku-3993 --out stars.md
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stars.md
+          git diff --cached --quiet || git commit -m "chore: update stars report [skip ci]"
+          git push
